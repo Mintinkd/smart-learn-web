@@ -101,7 +101,7 @@ curl https://your-workers-url/api/init-admin
 1. 将代码推送到 Git 仓库
 2. 在 Cloudflare Dashboard 创建 Pages 项目
 3. 配置：
-   - 构建命令: `cd frontend && npm install && npm run build`
+   - 构建命令: `npm run build`
    - 输出目录: `frontend/dist`
    - 环境变量: `VITE_API_BASE_URL=https://your-workers-url`
 4. 更新后端 `wrangler.toml` 中的 `CORS_ORIGINS` 为 Pages 域名

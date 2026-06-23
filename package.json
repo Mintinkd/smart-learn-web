@@ -2,5 +2,10 @@
   "name": "smart-learn-web",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["frontend", "backend"]
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "build": "cd frontend && npm run build",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev"
+  }
 }
