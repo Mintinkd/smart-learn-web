@@ -43,12 +43,12 @@ import DOMPurify from 'dompurify';
 import 'highlight.js/styles/github.css';
 
 const renderer = new marked.Renderer();
-renderer.code = function ({ text, lang }: { text: string; lang?: string }) {
-  const language = lang && hljs.getLanguage(lang) ? lang : '';
-  const highlighted = language
-    ? hljs.highlight(text, { language }).value
-    : hljs.highlightAuto(text).value;
-  return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
+renderer.code = function (code: string, infostring?: string) {
+  const lang = infostring && hljs.getLanguage(infostring) ? infostring : '';
+  const highlighted = lang
+    ? hljs.highlight(code, { language: lang }).value
+    : hljs.highlightAuto(code).value;
+  return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`;
 };
 marked.use({ renderer });
 
