@@ -5,6 +5,7 @@
   "workspaces": ["frontend", "backend"],
   "scripts": {
     "build": "cd frontend && npm run build",
+    "deploy": "cd backend && npx wrangler deploy",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev"
   }
