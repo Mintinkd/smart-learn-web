@@ -3,34 +3,18 @@ main = "src/index.ts"
 compatibility_date = "2024-05-29"
 
 # ============================================
-# 手动配置项（部署前必须修改）
+# D1、KV 绑定通过 Cloudflare Dashboard 配置：
+# Workers > smart-learn-backend > Settings > Bindings
+# - D1 Database: 变量名 DB
+# - KV Namespace: 变量名 RATE_LIMIT_KV
 # ============================================
 
-# 1. D1 数据库绑定 - 先运行 `wrangler d1 create smart-learn-db` 获取 database_id
-[[d1_databases]]
-binding = "DB"
-database_name = "smart-learn-db"
-database_id = "6a867b0f-ea19-4c2a-9bc2-9d69009b995e"
-
-# 2. KV 命名空间绑定 - 先运行 `wrangler kv namespace create RATE_LIMIT_KV` 获取 id
-[[kv_namespaces]]
-binding = "RATE_LIMIT_KV"
-id = "91407e3a79bf4a8cb5e9e177016e7ac6"
-
-# 3. 环境变量
 [vars]
 CORS_ORIGINS = "https://demo1.zenfishlog.cc.cd"
-# 部署后改为你的 Pages 域名，如: "https://smart-learn.pages.dev"
 
 # ============================================
-# Secrets（通过 wrangler secret put 设置，不要写在这里）
-# - JWT_SECRET_KEY: JWT签名密钥（至少32字符随机字符串）
-# - ENCRYPTION_KEY: API密钥加密密钥（32字节Base64编码）
-# - ADMIN_INITIAL_PASSWORD: 管理员初始密码
+# Secrets（通过 wrangler secret put 设置）
+# - JWT_SECRET_KEY
+# - ENCRYPTION_KEY
+# - ADMIN_INITIAL_PASSWORD
 # ============================================
-
-# 生产环境配置
-[env.production]
-name = "smart-learn-backend-prod"
-[env.production.vars]
-CORS_ORIGINS = "REPLACE_WITH_YOUR_PAGES_DOMAIN"
