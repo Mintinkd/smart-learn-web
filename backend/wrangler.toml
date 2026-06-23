@@ -7,6 +7,10 @@ binding = "DB"
 database_name = "smart_learn_db"
 database_id = "7f490d6d-cbeb-4d44-a3ac-5d2621fec1cf"
 
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "91407e3a79bf4a8cb5e9e177016e7ac6"
+
 [vars]
 CORS_ORIGINS = "https://demo1.zenfishlog.cc.cd"
 
