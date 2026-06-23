@@ -39,7 +39,18 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useChatStore } from '../stores/useChatStore';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
+import DOMPurify from 'dompurify';
 import 'highlight.js/styles/github.css';
+
+const renderer = new marked.Renderer();
+renderer.code = function ({ text, lang }: { text: string; lang?: string }) {
+  const language = lang && hljs.getLanguage(lang) ? lang : '';
+  const highlighted = language
+    ? hljs.highlight(text, { language }).value
+    : hljs.highlightAuto(text).value;
+  return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
+};
+marked.use({ renderer });
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -47,15 +58,8 @@ const chatStore = useChatStore();
 const question = ref('');
 const messagesRef = ref<HTMLElement>();
 
-marked.setOptions({
-  highlight(code: string, lang: string) {
-    if (lang && hljs.getLanguage(lang)) return hljs.highlight(code, { language: lang }).value;
-    return hljs.highlightAuto(code).value;
-  }
-});
-
 function renderMarkdown(content: string) {
-  return marked.parse(content || '');
+  return DOMPurify.sanitize(marked.parse(content || '') as string);
 }
 
 async function onSend() {

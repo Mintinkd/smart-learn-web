@@ -27,7 +27,7 @@ export class APIConfigDAO {
   }
 
   async updateVerification(db: D1Database, isVerified: number): Promise<void> {
-    await db.prepare("UPDATE api_config SET is_verified = ?, last_verified = datetime('now') WHERE id = 1")
-      .bind(isVerified).run();
+    await db.prepare('UPDATE api_config SET is_verified = ?, last_verified = ? WHERE id = 1')
+      .bind(isVerified, new Date().toISOString()).run();
   }
 }

@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
   registered_at TEXT NOT NULL,
   last_login_at TEXT,
   status TEXT NOT NULL DEFAULT '正常',
-  lock_until TEXT
+  lock_until TEXT,
+  failed_attempts INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS sessions (

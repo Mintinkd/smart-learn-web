@@ -18,13 +18,13 @@ export class SessionDAO {
   }
 
   async updateTitle(db: D1Database, sessionId: string, title: string): Promise<void> {
-    await db.prepare("UPDATE sessions SET title = ?, updated_at = datetime('now') WHERE session_id = ?")
-      .bind(title, sessionId).run();
+    await db.prepare('UPDATE sessions SET title = ?, updated_at = ? WHERE session_id = ?')
+      .bind(title, new Date().toISOString(), sessionId).run();
   }
 
   async updateStatus(db: D1Database, sessionId: string, status: string): Promise<void> {
-    await db.prepare("UPDATE sessions SET status = ?, updated_at = datetime('now') WHERE session_id = ?")
-      .bind(status, sessionId).run();
+    await db.prepare('UPDATE sessions SET status = ?, updated_at = ? WHERE session_id = ?')
+      .bind(status, new Date().toISOString(), sessionId).run();
   }
 
   async deleteById(db: D1Database, sessionId: string): Promise<void> {

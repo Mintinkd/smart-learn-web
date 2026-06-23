@@ -44,7 +44,8 @@ export class KnowledgeDAO {
         params.push(value);
       }
     }
-    sets.push("updated_at = datetime('now')");
+    sets.push('updated_at = ?');
+    params.push(new Date().toISOString());
     params.push(entryId);
     await db.prepare(`UPDATE knowledge_entries SET ${sets.join(', ')} WHERE entry_id = ?`).bind(...params).run();
     if (updates.tags !== undefined) {

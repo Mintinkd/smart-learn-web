@@ -25,6 +25,7 @@ import { useHistoryStore } from '../stores/useHistoryStore';
 import { useChatStore } from '../stores/useChatStore';
 import { ElMessage } from 'element-plus';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 const route = useRoute();
 const router = useRouter();
@@ -33,7 +34,7 @@ const chatStore = useChatStore();
 const recordId = route.params.id as string;
 const detail = ref<any>(null);
 
-function renderMarkdown(content: string) { return marked.parse(content || ''); }
+function renderMarkdown(content: string) { return DOMPurify.sanitize(marked.parse(content || '') as string); }
 
 async function copyText(text: string) {
   try {

@@ -62,11 +62,18 @@ authRoutes.post('/login', async (c) => {
 
   const valid = await verifyPassword(body.password, user.password_hash, user.salt);
   if (!valid) {
-    await userDAO.updateStatus(c.env.DB, body.username, '锁定', new Date(Date.now() + 15 * 60 * 1000).toISOString());
+    const failCount = await userDAO.getFailedAttempts(c.env.DB, body.username);
+    const newCount = failCount + 1;
+    if (newCount >= 3) {
+      await userDAO.updateStatus(c.env.DB, body.username, '锁定', new Date(Date.now() + 15 * 60 * 1000).toISOString());
+    } else {
+      await userDAO.updateFailedAttempts(c.env.DB, body.username, newCount);
+    }
     return c.json(error(401, 'AUTH_003: 用户名或密码错误'), 401);
   }
 
   await userDAO.updateStatus(c.env.DB, body.username, '正常', null);
+
   await userDAO.updateLoginTime(c.env.DB, body.username);
 
   const accessToken = await signJWT({ username: user.username, role: user.role, type: 'access' }, c.env.JWT_SECRET_KEY, 7200);

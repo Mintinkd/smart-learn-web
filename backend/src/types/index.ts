@@ -16,6 +16,7 @@ export interface User {
   last_login_at: string | null;
   status: '正常' | '锁定';
   lock_until: string | null;
+  failed_attempts: number;
 }
 
 export interface Session {
