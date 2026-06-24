@@ -36,7 +36,7 @@ export interface QARecord {
   answer: string;
   created_at: string;
   api_status: '成功' | '超时' | '失败';
-  api_provider: '智谱AI' | '百度UNIT';
+  api_provider: '智谱AI' | '百度UNIT' | 'DeepSeek' | '通义千问' | 'OpenAI兼容';
 }
 
 export interface Tag {
@@ -64,7 +64,7 @@ export interface KnowledgeEntry {
 }
 
 export interface APIConfig {
-  provider: '智谱AI' | '百度UNIT';
+  provider: '智谱AI' | '百度UNIT' | 'DeepSeek' | '通义千问' | 'OpenAI兼容';
   api_key_encrypted: string;
   api_key_iv: string;
   is_verified: number;

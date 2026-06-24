@@ -21,7 +21,13 @@
       <template #header>API配置</template>
       <el-form style="max-width:400px">
         <el-form-item label="服务提供商">
-          <el-select v-model="apiProvider"><el-option label="智谱AI" value="智谱AI" /><el-option label="百度UNIT" value="百度UNIT" /></el-select>
+          <el-select v-model="apiProvider">
+            <el-option label="智谱AI" value="智谱AI" />
+            <el-option label="DeepSeek" value="DeepSeek" />
+            <el-option label="通义千问" value="通义千问" />
+            <el-option label="百度UNIT" value="百度UNIT" />
+            <el-option label="OpenAI兼容" value="OpenAI兼容" />
+          </el-select>
         </el-form-item>
         <el-form-item><el-input v-model="apiKey" type="password" placeholder="API密钥" show-password /></el-form-item>
         <el-button @click="onVerifyKey">验证密钥</el-button>
