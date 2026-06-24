@@ -1,6 +1,7 @@
 export interface Env {
   DB: D1Database;
   RATE_LIMIT_KV: KVNamespace;
+  ASSETS: Fetcher;
   JWT_SECRET_KEY: string;
   ENCRYPTION_KEY: string;
   CORS_ORIGINS: string;

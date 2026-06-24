@@ -54,12 +54,13 @@ app.onError((err, c) => {
   return c.json(error(500, `SYS_001: ${err instanceof Error ? err.message : '服务器内部错误'}`), 500);
 });
 
-app.notFound((c) => {
+app.get('*', async (c) => {
   const path = new URL(c.req.url).pathname;
   if (path.startsWith('/api') || path === '/health') {
     return c.json(error(404, 'SYS_004: 接口不存在'), 404);
   }
-  return new Response(null, { status: 404 });
+  const res = await c.env.ASSETS.fetch(c.req.raw);
+  return res;
 });
 
 export default app;
