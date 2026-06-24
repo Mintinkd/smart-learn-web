@@ -139,6 +139,18 @@ chatRoutes.delete('/sessions/:session_id', async (c) => {
   return c.json(success(null));
 });
 
+chatRoutes.put('/sessions/:session_id/title', async (c) => {
+  const user = c.get('user') as JWTPayload;
+  const sessionId = c.req.param('session_id');
+  const body = await c.req.json<{ title: string }>();
+  if (!body.title?.trim()) return c.json(error(400, '请输入标题'), 400);
+  const sessionDAO = new SessionDAO();
+  const session = await sessionDAO.findById(c.env.DB, sessionId);
+  if (!session || session.username !== user.username) return c.json(error(403, '无权限'), 403);
+  await sessionDAO.updateTitle(c.env.DB, sessionId, body.title.trim());
+  return c.json(success(null));
+});
+
 chatRoutes.post('/verify-api-key', async (c) => {
   const body = await c.req.json<{ provider: string; api_key: string }>();
   if (!body.api_key) return c.json(error(400, '请输入API密钥'), 400);

@@ -5,7 +5,7 @@
       <el-button type="success" size="small" @click="chatStore.createSession()" style="width:100%;margin-bottom:10px">新建会话</el-button>
       <el-menu @select="onSessionSelect">
         <el-menu-item v-for="s in chatStore.sessions" :key="s.session_id" :index="s.session_id">
-          <span>{{ s.title }}</span>
+          <span class="session-title" @dblclick.stop="onRenameSession(s)">{{ s.title }}</span>
         </el-menu-item>
       </el-menu>
       <div class="nav-btns">
@@ -40,6 +40,8 @@ import { useChatStore } from '../stores/useChatStore';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 import DOMPurify from 'dompurify';
+import api from '../services/apiService';
+import { ElMessageBox } from 'element-plus';
 import 'highlight.js/styles/github.css';
 
 const renderer = new marked.Renderer();
@@ -83,6 +85,14 @@ watch(() => chatStore.messages.length, () => nextTick(scrollToBottom));
 function onLogout() {
   authStore.logout();
   router.push('/login');
+}
+
+async function onRenameSession(s: { session_id: string; title: string }) {
+  const { value } = await ElMessageBox.prompt('请输入新标题', '重命名', { inputValue: s.title, confirmButtonText: '确定', cancelButtonText: '取消' });
+  if (value?.trim()) {
+    await api.put(`/api/chat/sessions/${s.session_id}/title`, { title: value.trim() });
+    await chatStore.loadSessions();
+  }
 }
 
 onMounted(async () => {
