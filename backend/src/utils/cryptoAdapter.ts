@@ -34,19 +34,29 @@ export async function verifyPassword(password: string, hashBase64: string, saltB
   return result === 0;
 }
 
-export async function encryptApiKey(plaintext: string, masterKeyHex: string): Promise<{ encrypted: string; iv: string }> {
+async function deriveAESKey(masterKey: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', encoder.encode(masterKey), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: encoder.encode('smart-learn-encryption-salt'), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+export async function encryptApiKey(plaintext: string, masterKey: string): Promise<{ encrypted: string; iv: string }> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const keyData = fromBase64(masterKeyHex);
-  const key = await crypto.subtle.importKey('raw', keyData, { name: 'AES-GCM' }, false, ['encrypt']);
+  const key = await deriveAESKey(masterKey);
   const encoder = new TextEncoder();
   const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(plaintext));
   return { encrypted: toBase64(encrypted), iv: toBase64(iv) };
 }
 
-export async function decryptApiKey(encryptedBase64: string, ivBase64: string, masterKeyHex: string): Promise<string> {
+export async function decryptApiKey(encryptedBase64: string, ivBase64: string, masterKey: string): Promise<string> {
   const iv = fromBase64(ivBase64);
-  const keyData = fromBase64(masterKeyHex);
-  const key = await crypto.subtle.importKey('raw', keyData, { name: 'AES-GCM' }, false, ['decrypt']);
+  const key = await deriveAESKey(masterKey);
   const encrypted = fromBase64(encryptedBase64);
   const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
   return new TextDecoder().decode(decrypted);
