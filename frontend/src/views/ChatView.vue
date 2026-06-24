@@ -5,10 +5,12 @@
       <el-button type="success" size="small" @click="chatStore.createSession()" style="width:100%;margin-bottom:10px">新建会话</el-button>
       <el-menu @select="onSessionSelect">
         <el-menu-item v-for="s in chatStore.sessions" :key="s.session_id" :index="s.session_id">
-          <span class="session-title">{{ s.title }}</span>
-          <span class="rename-btn" @click.stop="onRenameSession(s)">✏️</span>
+          <span>{{ s.title }}</span>
         </el-menu-item>
       </el-menu>
+      <div class="session-actions" v-if="chatStore.currentSessionId">
+        <el-button size="small" @click="onRenameCurrentSession">重命名当前会话</el-button>
+      </div>
       <div class="nav-btns">
         <el-button size="small" @click="$router.push('/history')">历史记录</el-button>
         <el-button size="small" @click="$router.push('/profile')">个人中心</el-button>
@@ -88,10 +90,12 @@ function onLogout() {
   router.push('/login');
 }
 
-async function onRenameSession(s: { session_id: string; title: string }) {
-  const { value } = await ElMessageBox.prompt('请输入新标题', '重命名', { inputValue: s.title, confirmButtonText: '确定', cancelButtonText: '取消' });
+async function onRenameCurrentSession() {
+  const current = chatStore.sessions.find(s => s.session_id === chatStore.currentSessionId);
+  if (!current) return;
+  const { value } = await ElMessageBox.prompt('请输入新标题', '重命名', { inputValue: current.title, confirmButtonText: '确定', cancelButtonText: '取消' });
   if (value?.trim()) {
-    await api.put(`/api/chat/sessions/${s.session_id}/title`, { title: value.trim() });
+    await api.put(`/api/chat/sessions/${current.session_id}/title`, { title: value.trim() });
     await chatStore.loadSessions();
   }
 }
@@ -117,7 +121,5 @@ onMounted(async () => {
 .message .content { margin-top: 4px; padding: 8px 12px; border-radius: 8px; background: #fff; }
 .message.user .content { background: #e8f4fd; }
 .input-area { display: flex; padding: 12px; border-top: 1px solid #e4e7ed; background: #fff; }
-.session-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rename-btn { margin-left: 4px; cursor: pointer; font-size: 12px; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; }
-.el-menu-item:hover .rename-btn { opacity: 1; }
+.session-actions { padding: 8px 0; }
 </style>
