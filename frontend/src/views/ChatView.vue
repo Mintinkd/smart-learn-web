@@ -5,7 +5,8 @@
       <el-button type="success" size="small" @click="chatStore.createSession()" style="width:100%;margin-bottom:10px">新建会话</el-button>
       <el-menu @select="onSessionSelect">
         <el-menu-item v-for="s in chatStore.sessions" :key="s.session_id" :index="s.session_id">
-          <span class="session-title" @dblclick.stop="onRenameSession(s)">{{ s.title }}</span>
+          <span class="session-title">{{ s.title }}</span>
+          <span class="rename-btn" @click.stop="onRenameSession(s)">✏️</span>
         </el-menu-item>
       </el-menu>
       <div class="nav-btns">
@@ -117,6 +118,6 @@ onMounted(async () => {
 .message.user .content { background: #e8f4fd; }
 .input-area { display: flex; padding: 12px; border-top: 1px solid #e4e7ed; background: #fff; }
 .session-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rename-icon { margin-left: 4px; cursor: pointer; color: #999; flex-shrink: 0; }
-.rename-icon:hover { color: #409eff; }
+.rename-btn { margin-left: 4px; cursor: pointer; font-size: 12px; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; }
+.el-menu-item:hover .rename-btn { opacity: 1; }
 </style>
