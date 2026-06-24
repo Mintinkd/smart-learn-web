@@ -55,7 +55,11 @@ app.onError((err, c) => {
 });
 
 app.notFound((c) => {
-  return c.json(error(404, 'SYS_004: 接口不存在'), 404);
+  const path = new URL(c.req.url).pathname;
+  if (path.startsWith('/api') || path === '/health') {
+    return c.json(error(404, 'SYS_004: 接口不存在'), 404);
+  }
+  return new Response(null, { status: 404 });
 });
 
 export default app;
