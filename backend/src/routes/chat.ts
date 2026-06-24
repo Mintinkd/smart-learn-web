@@ -28,7 +28,7 @@ chatRoutes.post('/ask', async (c) => {
   }
   if (!config?.api_key_encrypted) return c.json(error(400, 'CHAT_005: 请先配置API密钥'), 400);
 
-  const llm = createLLMClient(config.provider, config.api_key_encrypted, undefined, config.model);
+  const llm = createLLMClient(config.provider, config.api_key_encrypted, config.secret_key_encrypted, config.model, config.base_url);
   const qaDAO = new QARecordDAO();
   const sessionDAO = new SessionDAO();
   const knowledgeDAO = new KnowledgeDAO();
@@ -152,9 +152,9 @@ chatRoutes.put('/sessions/:session_id/title', async (c) => {
 });
 
 chatRoutes.post('/verify-api-key', async (c) => {
-  const body = await c.req.json<{ provider: string; api_key: string }>();
+  const body = await c.req.json<{ provider: string; api_key: string; secret_key?: string; base_url?: string }>();
   if (!body.api_key) return c.json(error(400, '请输入API密钥'), 400);
-  const llm = createLLMClient(body.provider, body.api_key);
+  const llm = createLLMClient(body.provider, body.api_key, body.secret_key || '', undefined, body.base_url);
   const valid = await llm.verifyKey();
   return c.json(success({ valid }));
 });

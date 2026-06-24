@@ -41,6 +41,8 @@ userRoutes.get('/api-config', async (c) => {
   return c.json(success({
     provider: config?.provider || '智谱AI',
     model: config?.model || '',
+    secret_key: config?.secret_key_encrypted || '',
+    base_url: config?.base_url || '',
     is_verified: config?.is_verified || 0,
     last_verified: config?.last_verified || null
   }));
@@ -48,7 +50,7 @@ userRoutes.get('/api-config', async (c) => {
 
 userRoutes.put('/api-config', async (c) => {
   if (!c.env.ENCRYPTION_KEY) return c.json(error(500, 'ENCRYPTION_KEY 未配置，请运行 wrangler secret put ENCRYPTION_KEY'), 500);
-  const body = await c.req.json<{ provider: string; model: string; api_key: string }>();
+  const body = await c.req.json<{ provider: string; model: string; api_key: string; secret_key?: string; base_url?: string }>();
   if (!body.api_key) return c.json(error(400, '请输入API密钥'), 400);
   const apiConfigDAO = new APIConfigDAO();
   try {
@@ -57,6 +59,9 @@ userRoutes.put('/api-config', async (c) => {
       model: body.model || '',
       api_key_encrypted: body.api_key,
       api_key_iv: '',
+      secret_key_encrypted: body.secret_key || '',
+      secret_key_iv: '',
+      base_url: body.base_url || '',
       is_verified: 0
     }, c.env.ENCRYPTION_KEY);
   } catch (e) {

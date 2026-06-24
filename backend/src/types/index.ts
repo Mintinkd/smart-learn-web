@@ -69,6 +69,9 @@ export interface APIConfig {
   model: string;
   api_key_encrypted: string;
   api_key_iv: string;
+  secret_key_encrypted: string;
+  secret_key_iv: string;
+  base_url: string;
   is_verified: number;
   last_verified: string | null;
 }

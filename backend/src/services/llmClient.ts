@@ -164,10 +164,20 @@ export class BaiduLLMClient implements LLMClient {
   private apiKey: string;
   private secretKey: string;
   private accessToken: string = '';
-  private readonly chatUrl = 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro';
+  private model: string;
   private readonly tokenUrl = 'https://aip.baidubce.com/oauth/2.0/token';
 
-  constructor(apiKey: string, secretKey = '') { this.apiKey = apiKey; this.secretKey = secretKey; }
+  private static readonly MODEL_ENDPOINTS: Record<string, string> = {
+    'ERNIE-Bot 4.0': 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro',
+    'ERNIE-Bot': 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
+    'ERNIE-Bot-turbo': 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/eb-instant',
+  };
+
+  constructor(apiKey: string, secretKey = '', model?: string) { this.apiKey = apiKey; this.secretKey = secretKey; this.model = model || 'ERNIE-Bot 4.0'; }
+
+  private get chatUrl(): string {
+    return BaiduLLMClient.MODEL_ENDPOINTS[this.model] || BaiduLLMClient.MODEL_ENDPOINTS['ERNIE-Bot 4.0'];
+  }
 
   private async getAccessToken(): Promise<string> {
     if (this.accessToken) return this.accessToken;
@@ -211,11 +221,10 @@ export class OpenAICompatibleLLMClient implements LLMClient {
   private baseUrl: string;
   private model: string;
 
-  constructor(apiKey: string, config: string, model?: string) {
+  constructor(apiKey: string, baseUrl = '', model?: string) {
     this.apiKey = apiKey;
-    const parts = config.split('|');
-    this.baseUrl = parts[0] || 'https://api.openai.com/v1/chat/completions';
-    this.model = model || parts[1] || 'gpt-3.5-turbo';
+    this.baseUrl = baseUrl || 'https://api.openai.com/v1/chat/completions';
+    this.model = model || 'gpt-3.5-turbo';
   }
 
   async *chatStream(messages: Array<{ role: string; content: string }>, timeout = 60000): AsyncGenerator<string, void, unknown> {
@@ -249,10 +258,10 @@ export class OpenAICompatibleLLMClient implements LLMClient {
   getProviderName(): string { return 'OpenAI兼容'; }
 }
 
-export function createLLMClient(provider: string, apiKey: string, secretKey?: string, model?: string): LLMClient {
-  if (provider === '百度UNIT') return new BaiduLLMClient(apiKey, secretKey);
+export function createLLMClient(provider: string, apiKey: string, secretKey?: string, model?: string, baseUrl?: string): LLMClient {
+  if (provider === '百度UNIT') return new BaiduLLMClient(apiKey, secretKey, model);
   if (provider === 'DeepSeek') return new DeepSeekLLMClient(apiKey, model);
-  if (provider === 'OpenAI兼容') return new OpenAICompatibleLLMClient(apiKey, secretKey || '', model);
+  if (provider === 'OpenAI兼容') return new OpenAICompatibleLLMClient(apiKey, baseUrl || '', model);
   if (provider === '通义千问') return new QwenLLMClient(apiKey, model);
   return new ZhipuLLMClient(apiKey, model);
 }

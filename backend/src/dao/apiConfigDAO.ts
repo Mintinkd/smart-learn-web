@@ -10,8 +10,15 @@ export class APIConfigDAO {
       encrypted = result.encrypted;
       iv = result.iv;
     }
-    await db.prepare('UPDATE api_config SET provider = ?, model = ?, api_key_encrypted = ?, api_key_iv = ?, is_verified = ? WHERE id = 1')
-      .bind(config.provider, config.model, encrypted, iv, config.is_verified).run();
+    let secretEncrypted = '';
+    let secretIv = '';
+    if (config.secret_key_encrypted) {
+      const result = await encryptApiKey(config.secret_key_encrypted, encryptionKey);
+      secretEncrypted = result.encrypted;
+      secretIv = result.iv;
+    }
+    await db.prepare('UPDATE api_config SET provider = ?, model = ?, api_key_encrypted = ?, api_key_iv = ?, secret_key_encrypted = ?, secret_key_iv = ?, base_url = ?, is_verified = ? WHERE id = 1')
+      .bind(config.provider, config.model, encrypted, iv, secretEncrypted, secretIv, config.base_url || '', config.is_verified).run();
   }
 
   async load(db: D1Database, encryptionKey: string): Promise<APIConfig | null> {
@@ -21,6 +28,12 @@ export class APIConfigDAO {
       try {
         const decrypted = await decryptApiKey(result.api_key_encrypted, result.api_key_iv, encryptionKey);
         result.api_key_encrypted = decrypted;
+      } catch { /* keep encrypted value */ }
+    }
+    if (result.secret_key_encrypted && result.secret_key_iv) {
+      try {
+        const decrypted = await decryptApiKey(result.secret_key_encrypted, result.secret_key_iv, encryptionKey);
+        result.secret_key_encrypted = decrypted;
       } catch { /* keep encrypted value */ }
     }
     return result;

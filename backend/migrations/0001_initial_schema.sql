@@ -75,6 +75,9 @@ CREATE TABLE IF NOT EXISTS api_config (
   model TEXT NOT NULL DEFAULT '',
   api_key_encrypted TEXT NOT NULL DEFAULT '',
   api_key_iv TEXT NOT NULL DEFAULT '',
+  secret_key_encrypted TEXT NOT NULL DEFAULT '',
+  secret_key_iv TEXT NOT NULL DEFAULT '',
+  base_url TEXT NOT NULL DEFAULT '',
   is_verified INTEGER NOT NULL DEFAULT 0,
   last_verified TEXT
 );

@@ -36,6 +36,8 @@
           <el-input v-else v-model="apiModel" placeholder="输入模型名称" />
         </el-form-item>
         <el-form-item><el-input v-model="apiKey" type="password" placeholder="API密钥" show-password /></el-form-item>
+        <el-form-item v-if="apiProvider === '百度UNIT'"><el-input v-model="secretKey" type="password" placeholder="Secret Key（百度UNIT需要）" show-password /></el-form-item>
+        <el-form-item v-if="apiProvider === 'OpenAI兼容'"><el-input v-model="baseUrl" placeholder="Base URL（默认OpenAI）" /></el-form-item>
         <el-button @click="onVerifyKey">验证密钥</el-button>
         <el-button type="primary" @click="onSaveApi">保存配置</el-button>
       </el-form>
@@ -60,6 +62,8 @@ const newPwd = ref('');
 const apiProvider = ref('智谱AI');
 const apiModel = ref('');
 const apiKey = ref('');
+const secretKey = ref('');
+const baseUrl = ref('');
 
 const MODEL_OPTIONS: Record<string, string[]> = {
   '智谱AI': ['glm-4-flash', 'glm-4', 'glm-4-plus', 'glm-4-long'],
@@ -85,12 +89,18 @@ async function onChangePassword() {
 
 async function onVerifyKey() {
   if (!apiKey.value) { ElMessage.warning('请输入API密钥'); return; }
-  const { data } = await api.post('/api/chat/verify-api-key', { provider: apiProvider.value, api_key: apiKey.value });
+  const payload: Record<string, string> = { provider: apiProvider.value, api_key: apiKey.value };
+  if (apiProvider.value === '百度UNIT' && secretKey.value) payload.secret_key = secretKey.value;
+  if (apiProvider.value === 'OpenAI兼容' && baseUrl.value) payload.base_url = baseUrl.value;
+  const { data } = await api.post('/api/chat/verify-api-key', payload);
   ElMessage(data.code === 0 && data.data?.valid ? { message: '验证通过', type: 'success' } : { message: '验证失败', type: 'error' });
 }
 
 async function onSaveApi() {
-  const { data } = await api.put('/api/user/api-config', { provider: apiProvider.value, model: apiModel.value, api_key: apiKey.value });
+  const payload: Record<string, string> = { provider: apiProvider.value, model: apiModel.value, api_key: apiKey.value };
+  if (apiProvider.value === '百度UNIT' && secretKey.value) payload.secret_key = secretKey.value;
+  if (apiProvider.value === 'OpenAI兼容' && baseUrl.value) payload.base_url = baseUrl.value;
+  const { data } = await api.put('/api/user/api-config', payload);
   if (data.code === 0) ElMessage.success('配置已保存');
   else ElMessage.error(data.message);
 }
@@ -113,6 +123,8 @@ onMounted(async () => {
   if (data.code === 0 && data.data) {
     apiProvider.value = data.data.provider || '智谱AI';
     apiModel.value = data.data.model || '';
+    secretKey.value = data.data.secret_key || '';
+    baseUrl.value = data.data.base_url || '';
     providerModels.value = MODEL_OPTIONS[apiProvider.value] || [];
   }
 });
