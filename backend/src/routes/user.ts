@@ -37,7 +37,7 @@ userRoutes.put('/password', async (c) => {
 
 userRoutes.get('/api-config', async (c) => {
   const apiConfigDAO = new APIConfigDAO();
-  const config = await apiConfigDAO.load(c.env.DB, c.env.ENCRYPTION_KEY);
+  const config = c.env.ENCRYPTION_KEY ? await apiConfigDAO.load(c.env.DB, c.env.ENCRYPTION_KEY) : null;
   return c.json(success({
     provider: config?.provider || '智谱AI',
     is_verified: config?.is_verified || 0,
@@ -46,15 +46,21 @@ userRoutes.get('/api-config', async (c) => {
 });
 
 userRoutes.put('/api-config', async (c) => {
+  if (!c.env.ENCRYPTION_KEY) return c.json(error(500, 'ENCRYPTION_KEY 未配置，请运行 wrangler secret put ENCRYPTION_KEY'), 500);
   const body = await c.req.json<{ provider: string; api_key: string }>();
   if (!body.api_key) return c.json(error(400, '请输入API密钥'), 400);
   const apiConfigDAO = new APIConfigDAO();
-  await apiConfigDAO.save(c.env.DB, {
-    provider: body.provider || '智谱AI',
-    api_key_encrypted: body.api_key,
-    api_key_iv: '',
-    is_verified: 0
-  }, c.env.ENCRYPTION_KEY);
+  try {
+    await apiConfigDAO.save(c.env.DB, {
+      provider: body.provider || '智谱AI',
+      api_key_encrypted: body.api_key,
+      api_key_iv: '',
+      is_verified: 0
+    }, c.env.ENCRYPTION_KEY);
+  } catch (e) {
+    console.error('save api config error:', e instanceof Error ? e.message : String(e));
+    return c.json(error(500, `保存失败: ${e instanceof Error ? e.message : '加密错误'}`), 500);
+  }
   return c.json(success(null, 'API配置已保存'));
 });
 
