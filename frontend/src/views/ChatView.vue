@@ -51,7 +51,7 @@ import { ElMessageBox } from 'element-plus';
 import 'highlight.js/styles/github.css';
 
 const renderer = new marked.Renderer();
-renderer.code = function (code: string, infostring?: string) {
+renderer.code = function (code: string, infostring?: string, _escaped?: boolean) {
   const lang = infostring && hljs.getLanguage(infostring) ? infostring : '';
   const highlighted = lang
     ? hljs.highlight(code, { language: lang }).value
@@ -64,10 +64,11 @@ const router = useRouter();
 const authStore = useAuthStore();
 const chatStore = useChatStore();
 const question = ref('');
-const messagesRef = ref<HTMLElement>();
+const messagesRef = ref<HTMLElement | null>(null);
 
-function renderMarkdown(content: string) {
-  return DOMPurify.sanitize(marked.parse(content || '') as string);
+function renderMarkdown(content: string): string {
+  const parsed = marked.parse(content || '');
+  return DOMPurify.sanitize(typeof parsed === 'string' ? parsed : '') as string;
 }
 
 async function onSend() {
@@ -90,11 +91,13 @@ function onLogout() {
 }
 
 async function onRenameSession(s: { session_id: string; title: string }) {
-  const { value } = await ElMessageBox.prompt('请输入新标题', '重命名', { inputValue: s.title, confirmButtonText: '确定', cancelButtonText: '取消' });
-  if (value?.trim()) {
-    await api.put(`/api/chat/sessions/${s.session_id}/title`, { title: value.trim() });
-    await chatStore.loadSessions();
-  }
+  try {
+    const { value } = await ElMessageBox.prompt('请输入新标题', '重命名', { inputValue: s.title, confirmButtonText: '确定', cancelButtonText: '取消' });
+    if (value?.trim()) {
+      await api.put(`/api/chat/sessions/${s.session_id}/title`, { title: value.trim() });
+      await chatStore.loadSessions();
+    }
+  } catch { /* cancelled */ }
 }
 
 onMounted(async () => {
