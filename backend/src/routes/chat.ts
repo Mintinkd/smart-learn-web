@@ -34,6 +34,7 @@ chatRoutes.post('/ask', async (c) => {
   const knowledgeDAO = new KnowledgeDAO();
 
   const history = await qaDAO.findBySession(c.env.DB, body.session_id);
+  console.log(`Session ${body.session_id}: ${history.length} history records loaded`);
   const messages: Array<{ role: string; content: string }> = [
     { role: 'system', content: '你是一个智能学习助手，请用中文回答学习问题。' }
   ];
@@ -70,19 +71,29 @@ chatRoutes.post('/ask', async (c) => {
         controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: `请求失败: ${errMsg}` })}\n\n`));
         fullAnswer = fullAnswer || `[错误] 请求失败: ${errMsg}`;
       }
-      controller.close();
 
       const recordId = crypto.randomUUID();
-      await qaDAO.insert(c.env.DB, {
-        record_id: recordId, username: user.username, session_id: body.session_id,
-        question: body.question, answer: fullAnswer, created_at: new Date().toISOString(),
-        api_status: apiStatus, api_provider: config.provider
-      });
-
-      const session = await sessionDAO.findById(c.env.DB, body.session_id);
-      if (session?.title === '新会话') {
-        await sessionDAO.updateTitle(c.env.DB, body.session_id, body.question.substring(0, 30));
+      try {
+        await qaDAO.insert(c.env.DB, {
+          record_id: recordId, username: user.username, session_id: body.session_id,
+          question: body.question, answer: fullAnswer, created_at: new Date().toISOString(),
+          api_status: apiStatus, api_provider: config.provider
+        });
+        console.log(`Saved record ${recordId} for session ${body.session_id}`);
+      } catch (e) {
+        console.error('Failed to save record:', e instanceof Error ? e.message : String(e));
       }
+
+      try {
+        const session = await sessionDAO.findById(c.env.DB, body.session_id);
+        if (session?.title === '新会话') {
+          await sessionDAO.updateTitle(c.env.DB, body.session_id, body.question.substring(0, 30));
+        }
+      } catch (e) {
+        console.error('Failed to update session title:', e instanceof Error ? e.message : String(e));
+      }
+
+      controller.close();
     }
   });
 
