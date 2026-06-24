@@ -98,6 +98,9 @@ async function onRenameSession(s: { session_id: string; title: string }) {
 }
 
 onMounted(async () => {
+  if (authStore.isAuthenticated && !authStore.user) {
+    await authStore.getUserInfo();
+  }
   await chatStore.loadSessions();
   if (!chatStore.currentSessionId && chatStore.sessions.length > 0) {
     chatStore.switchSession(chatStore.sessions[0].session_id);
