@@ -7,7 +7,7 @@ const router = createRouter({
     { path: '/login', name: 'Login', component: () => import('../views/LoginView.vue') },
     { path: '/chat', name: 'Chat', component: () => import('../views/ChatView.vue'), meta: { requiresAuth: true } },
     { path: '/history', name: 'History', component: () => import('../views/HistoryView.vue'), meta: { requiresAuth: true } },
-    { path: '/detail/:id', name: 'Detail', component: () => import('../views/DetailView.vue'), meta: { requiresAuth: true } },
+    { path: '/detail/:sessionId', name: 'Detail', component: () => import('../views/DetailView.vue'), meta: { requiresAuth: true } },
     { path: '/profile', name: 'Profile', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
     { path: '/admin', name: 'Admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/', redirect: '/chat' },

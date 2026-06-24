@@ -2,78 +2,97 @@ import { Hono } from 'hono';
 import type { Env, JWTPayload } from '../types';
 import { success, error, paginated } from '../utils/response';
 import { QARecordDAO } from '../dao/qaRecordDAO';
+import { SessionDAO } from '../dao/sessionDAO';
 import { TagDAO } from '../dao/tagDAO';
 
 const historyRoutes = new Hono<{ Bindings: Env; Variables: { user: JWTPayload } }>();
 
-historyRoutes.get('/records', async (c) => {
+historyRoutes.get('/sessions', async (c) => {
   const user = c.get('user') as JWTPayload;
   const page = parseInt(c.req.query('page') || '1');
   const size = parseInt(c.req.query('size') || '20');
-  const tag = c.req.query('tag');
   const keyword = c.req.query('keyword');
 
+  const sessionDAO = new SessionDAO();
   const qaDAO = new QARecordDAO();
-  const tagDAO = new TagDAO();
+
+  let sessions = await sessionDAO.findByUser(c.env.DB, user.username);
 
   if (keyword) {
-    const records = await qaDAO.searchByKeyword(c.env.DB, user.username, keyword);
-    return c.json(success(records));
+    const matchedRecords = await qaDAO.searchByKeyword(c.env.DB, user.username, keyword);
+    const matchedSessionIds = [...new Set(matchedRecords.map(r => r.session_id))];
+    sessions = sessions.filter(s => matchedSessionIds.includes(s.session_id));
   }
 
-  if (tag) {
-    const tagEntity = await tagDAO.findByName(c.env.DB, user.username, tag);
-    if (!tagEntity) return c.json(success([]));
-    const recordIds = await tagDAO.findRecordsByTag(c.env.DB, tagEntity.tag_id);
-    const allResult = await qaDAO.findByUser(c.env.DB, user.username, 0, 10000);
-    const filtered = allResult.items.filter(r => recordIds.includes(r.record_id));
-    return c.json(success(filtered));
-  }
-
+  const total = sessions.length;
   const offset = (page - 1) * size;
-  const result = await qaDAO.findByUser(c.env.DB, user.username, offset, size);
-  return c.json(paginated(result.items, result.total, page, size));
+  const paged = sessions.slice(offset, offset + size);
+
+  const result = await Promise.all(paged.map(async (s) => {
+    const records = await qaDAO.findBySession(c.env.DB, s.session_id);
+    return {
+      session_id: s.session_id,
+      title: s.title,
+      created_at: s.created_at,
+      updated_at: s.updated_at,
+      message_count: records.length,
+      first_question: records[0]?.question?.substring(0, 50) || '',
+    };
+  }));
+
+  return c.json(paginated(result, total, page, size));
 });
 
-historyRoutes.get('/records/:record_id', async (c) => {
+historyRoutes.get('/sessions/:session_id', async (c) => {
   const user = c.get('user') as JWTPayload;
-  const recordId = c.req.param('record_id');
+  const sessionId = c.req.param('session_id');
+  const sessionDAO = new SessionDAO();
   const qaDAO = new QARecordDAO();
-  const record = await qaDAO.findById(c.env.DB, recordId);
-  if (!record || record.username !== user.username) return c.json(error(404, 'HIST_001: 记录不存在'), 404);
-  const sessionRecords = await qaDAO.findBySession(c.env.DB, record.session_id);
-  return c.json(success({ record, session_context: sessionRecords }));
+
+  const session = await sessionDAO.findById(c.env.DB, sessionId);
+  if (!session || session.username !== user.username) return c.json(error(404, '会话不存在'), 404);
+
+  const records = await qaDAO.findBySession(c.env.DB, sessionId);
+  return c.json(success({ session, records }));
 });
 
-historyRoutes.delete('/records', async (c) => {
+historyRoutes.delete('/sessions/:session_id', async (c) => {
   const user = c.get('user') as JWTPayload;
-  const body = await c.req.json<{ record_ids: string[] }>();
-  if (!body.record_ids?.length) return c.json(error(400, '请选择要删除的记录'), 400);
-  const qaDAO = new QARecordDAO();
-  await qaDAO.deleteByIds(c.env.DB, body.record_ids);
+  const sessionId = c.req.param('session_id');
+  const sessionDAO = new SessionDAO();
+  const session = await sessionDAO.findById(c.env.DB, sessionId);
+  if (!session || session.username !== user.username) return c.json(error(403, '无权限'), 403);
+  await sessionDAO.deleteById(c.env.DB, sessionId);
   return c.json(success(null));
 });
 
-historyRoutes.post('/records/:record_id/tags', async (c) => {
+historyRoutes.delete('/sessions', async (c) => {
   const user = c.get('user') as JWTPayload;
-  const recordId = c.req.param('record_id');
+  const body = await c.req.json<{ session_ids: string[] }>();
+  if (!body.session_ids?.length) return c.json(error(400, '请选择要删除的会话'), 400);
+  const sessionDAO = new SessionDAO();
+  for (const id of body.session_ids) {
+    await sessionDAO.deleteById(c.env.DB, id);
+  }
+  return c.json(success(null));
+});
+
+historyRoutes.post('/sessions/:session_id/tags', async (c) => {
+  const user = c.get('user') as JWTPayload;
+  const sessionId = c.req.param('session_id');
   const body = await c.req.json<{ tag: string }>();
   if (!body.tag) return c.json(error(400, '请输入标签名'), 400);
   const tagDAO = new TagDAO();
+  const qaDAO = new QARecordDAO();
   let tagEntity = await tagDAO.findByName(c.env.DB, user.username, body.tag);
   if (!tagEntity) {
     tagEntity = { tag_id: crypto.randomUUID(), name: body.tag, username: user.username, created_at: new Date().toISOString() };
     await tagDAO.insert(c.env.DB, tagEntity);
   }
-  await tagDAO.addRecordTag(c.env.DB, recordId, tagEntity.tag_id);
-  return c.json(success(null));
-});
-
-historyRoutes.delete('/records/:record_id/tags/:tag_id', async (c) => {
-  const recordId = c.req.param('record_id');
-  const tagId = c.req.param('tag_id');
-  const tagDAO = new TagDAO();
-  await tagDAO.removeRecordTag(c.env.DB, recordId, tagId);
+  const records = await qaDAO.findBySession(c.env.DB, sessionId);
+  for (const r of records) {
+    await tagDAO.addRecordTag(c.env.DB, r.record_id, tagEntity.tag_id);
+  }
   return c.json(success(null));
 });
 
@@ -86,12 +105,19 @@ historyRoutes.get('/tags', async (c) => {
 
 historyRoutes.get('/export', async (c) => {
   const user = c.get('user') as JWTPayload;
+  const sessionDAO = new SessionDAO();
   const qaDAO = new QARecordDAO();
-  const result = await qaDAO.findByUser(c.env.DB, user.username, 0, 100000);
-  const exportData = result.items.map(r => ({
-    record_id: r.record_id, question: r.question, answer: r.answer,
-    created_at: r.created_at, api_status: r.api_status, api_provider: r.api_provider
-  }));
+  const sessions = await sessionDAO.findByUser(c.env.DB, user.username);
+  const exportData = [];
+  for (const s of sessions) {
+    const records = await qaDAO.findBySession(c.env.DB, s.session_id);
+    exportData.push({
+      session_id: s.session_id,
+      title: s.title,
+      created_at: s.created_at,
+      messages: records.map(r => ({ question: r.question, answer: r.answer, created_at: r.created_at }))
+    });
+  }
   return c.json(success(exportData));
 });
 
