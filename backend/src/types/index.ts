@@ -65,6 +65,7 @@ export interface KnowledgeEntry {
 
 export interface APIConfig {
   provider: '智谱AI' | '百度UNIT' | 'DeepSeek' | '通义千问' | 'OpenAI兼容';
+  model: string;
   api_key_encrypted: string;
   api_key_iv: string;
   is_verified: number;

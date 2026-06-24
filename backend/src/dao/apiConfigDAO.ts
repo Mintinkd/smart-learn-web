@@ -10,8 +10,8 @@ export class APIConfigDAO {
       encrypted = result.encrypted;
       iv = result.iv;
     }
-    await db.prepare('UPDATE api_config SET provider = ?, api_key_encrypted = ?, api_key_iv = ?, is_verified = ? WHERE id = 1')
-      .bind(config.provider, encrypted, iv, config.is_verified).run();
+    await db.prepare('UPDATE api_config SET provider = ?, model = ?, api_key_encrypted = ?, api_key_iv = ?, is_verified = ? WHERE id = 1')
+      .bind(config.provider, config.model, encrypted, iv, config.is_verified).run();
   }
 
   async load(db: D1Database, encryptionKey: string): Promise<APIConfig | null> {

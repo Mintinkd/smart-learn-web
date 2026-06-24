@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS knowledge_tags (
 CREATE TABLE IF NOT EXISTS api_config (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   provider TEXT NOT NULL DEFAULT '智谱AI',
+  model TEXT NOT NULL DEFAULT '',
   api_key_encrypted TEXT NOT NULL DEFAULT '',
   api_key_iv TEXT NOT NULL DEFAULT '',
   is_verified INTEGER NOT NULL DEFAULT 0,

@@ -28,7 +28,7 @@ chatRoutes.post('/ask', async (c) => {
   }
   if (!config?.api_key_encrypted) return c.json(error(400, 'CHAT_005: 请先配置API密钥'), 400);
 
-  const llm = createLLMClient(config.provider, config.api_key_encrypted);
+  const llm = createLLMClient(config.provider, config.api_key_encrypted, undefined, config.model);
   const qaDAO = new QARecordDAO();
   const sessionDAO = new SessionDAO();
   const knowledgeDAO = new KnowledgeDAO();

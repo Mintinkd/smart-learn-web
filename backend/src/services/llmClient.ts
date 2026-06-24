@@ -40,9 +40,10 @@ async function* parseSSEStream(reader: ReadableStreamDefaultReader<Uint8Array>):
 
 export class ZhipuLLMClient implements LLMClient {
   private apiKey: string;
+  private model: string;
   private readonly url = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
-  constructor(apiKey: string) { this.apiKey = apiKey; }
+  constructor(apiKey: string, model?: string) { this.apiKey = apiKey; this.model = model || 'glm-4-flash'; }
 
   async *chatStream(messages: Array<{ role: string; content: string }>, timeout = 60000): AsyncGenerator<string, void, unknown> {
     const controller = new AbortController();
@@ -51,7 +52,7 @@ export class ZhipuLLMClient implements LLMClient {
       const response = await fetch(this.url, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'glm-4-flash', messages, temperature: 0.7, stream: true }),
+        body: JSON.stringify({ model: this.model, messages, temperature: 0.7, stream: true }),
         signal: controller.signal,
       });
       if (!response.ok) throw new Error(`智谱AI: ${await readErrorBody(response)}`);
@@ -66,7 +67,7 @@ export class ZhipuLLMClient implements LLMClient {
       const response = await fetch(this.url, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'glm-4-flash', messages: [{ role: 'user', content: 'hi' }], temperature: 0.7 }),
+        body: JSON.stringify({ model: this.model, messages: [{ role: 'user', content: 'hi' }], temperature: 0.7 }),
       });
       return response.status !== 401 && response.status !== 403;
     } catch { return false; }
@@ -77,9 +78,10 @@ export class ZhipuLLMClient implements LLMClient {
 
 export class DeepSeekLLMClient implements LLMClient {
   private apiKey: string;
+  private model: string;
   private readonly url = 'https://api.deepseek.com/chat/completions';
 
-  constructor(apiKey: string) { this.apiKey = apiKey; }
+  constructor(apiKey: string, model?: string) { this.apiKey = apiKey; this.model = model || 'deepseek-chat'; }
 
   async *chatStream(messages: Array<{ role: string; content: string }>, timeout = 60000): AsyncGenerator<string, void, unknown> {
     const controller = new AbortController();
@@ -88,7 +90,7 @@ export class DeepSeekLLMClient implements LLMClient {
       const response = await fetch(this.url, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'deepseek-chat', messages, temperature: 0.7, stream: true }),
+        body: JSON.stringify({ model: this.model, messages, temperature: 0.7, stream: true }),
         signal: controller.signal,
       });
       if (!response.ok) throw new Error(`DeepSeek: ${await readErrorBody(response)}`);
@@ -103,7 +105,7 @@ export class DeepSeekLLMClient implements LLMClient {
       const response = await fetch(this.url, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: 'hi' }] }),
+        body: JSON.stringify({ model: this.model, messages: [{ role: 'user', content: 'hi' }] }),
       });
       return response.status !== 401 && response.status !== 403;
     } catch { return false; }
@@ -114,9 +116,10 @@ export class DeepSeekLLMClient implements LLMClient {
 
 export class QwenLLMClient implements LLMClient {
   private apiKey: string;
+  private model: string;
   private readonly url = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 
-  constructor(apiKey: string) { this.apiKey = apiKey; }
+  constructor(apiKey: string, model?: string) { this.apiKey = apiKey; this.model = model || 'qwen-turbo'; }
 
   async *chatStream(messages: Array<{ role: string; content: string }>, timeout = 60000): AsyncGenerator<string, void, unknown> {
     const controller = new AbortController();
@@ -129,7 +132,7 @@ export class QwenLLMClient implements LLMClient {
           'Content-Type': 'application/json',
           'X-DashScope-SSE': 'enable',
         },
-        body: JSON.stringify({ model: 'qwen-turbo', messages, temperature: 0.7, stream: true }),
+        body: JSON.stringify({ model: this.model, messages, temperature: 0.7, stream: true }),
         signal: controller.signal,
       });
       if (!response.ok) throw new Error(`通义千问: ${await readErrorBody(response)}`);
@@ -148,7 +151,7 @@ export class QwenLLMClient implements LLMClient {
           'Content-Type': 'application/json',
           'X-DashScope-SSE': 'enable',
         },
-        body: JSON.stringify({ model: 'qwen-turbo', messages: [{ role: 'user', content: 'hi' }] }),
+        body: JSON.stringify({ model: this.model, messages: [{ role: 'user', content: 'hi' }] }),
       });
       return response.status !== 401 && response.status !== 403;
     } catch { return false; }
@@ -208,11 +211,11 @@ export class OpenAICompatibleLLMClient implements LLMClient {
   private baseUrl: string;
   private model: string;
 
-  constructor(apiKey: string, config: string) {
+  constructor(apiKey: string, config: string, model?: string) {
     this.apiKey = apiKey;
     const parts = config.split('|');
     this.baseUrl = parts[0] || 'https://api.openai.com/v1/chat/completions';
-    this.model = parts[1] || 'gpt-3.5-turbo';
+    this.model = model || parts[1] || 'gpt-3.5-turbo';
   }
 
   async *chatStream(messages: Array<{ role: string; content: string }>, timeout = 60000): AsyncGenerator<string, void, unknown> {
@@ -246,10 +249,10 @@ export class OpenAICompatibleLLMClient implements LLMClient {
   getProviderName(): string { return 'OpenAI兼容'; }
 }
 
-export function createLLMClient(provider: string, apiKey: string, secretKey?: string): LLMClient {
+export function createLLMClient(provider: string, apiKey: string, secretKey?: string, model?: string): LLMClient {
   if (provider === '百度UNIT') return new BaiduLLMClient(apiKey, secretKey);
-  if (provider === 'DeepSeek') return new DeepSeekLLMClient(apiKey);
-  if (provider === 'OpenAI兼容') return new OpenAICompatibleLLMClient(apiKey, secretKey || '');
-  if (provider === '通义千问') return new QwenLLMClient(apiKey);
-  return new ZhipuLLMClient(apiKey);
+  if (provider === 'DeepSeek') return new DeepSeekLLMClient(apiKey, model);
+  if (provider === 'OpenAI兼容') return new OpenAICompatibleLLMClient(apiKey, secretKey || '', model);
+  if (provider === '通义千问') return new QwenLLMClient(apiKey, model);
+  return new ZhipuLLMClient(apiKey, model);
 }
