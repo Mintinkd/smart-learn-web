@@ -116,4 +116,7 @@ onMounted(async () => {
 .message .content { margin-top: 4px; padding: 8px 12px; border-radius: 8px; background: #fff; }
 .message.user .content { background: #e8f4fd; }
 .input-area { display: flex; padding: 12px; border-top: 1px solid #e4e7ed; background: #fff; }
+.session-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rename-icon { margin-left: 4px; cursor: pointer; color: #999; flex-shrink: 0; }
+.rename-icon:hover { color: #409eff; }
 </style>
