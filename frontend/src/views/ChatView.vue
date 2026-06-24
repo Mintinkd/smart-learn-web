@@ -3,13 +3,16 @@
     <el-aside width="220px" class="sidebar">
       <h3>会话列表</h3>
       <el-button type="success" size="small" @click="chatStore.createSession()" style="width:100%;margin-bottom:10px">新建会话</el-button>
-      <el-menu @select="onSessionSelect">
-        <el-menu-item v-for="s in chatStore.sessions" :key="s.session_id" :index="s.session_id">
-          <span>{{ s.title }}</span>
-        </el-menu-item>
-      </el-menu>
-      <div class="session-actions" v-if="chatStore.currentSessionId">
-        <el-button size="small" @click="onRenameCurrentSession">重命名当前会话</el-button>
+      <div class="session-list">
+        <div
+          v-for="s in chatStore.sessions"
+          :key="s.session_id"
+          :class="['session-item', { active: s.session_id === chatStore.currentSessionId }]"
+          @click="chatStore.switchSession(s.session_id)"
+        >
+          <span class="session-title">{{ s.title }}</span>
+          <span class="rename-btn" @click.stop="onRenameSession(s)">✏️</span>
+        </div>
       </div>
       <div class="nav-btns">
         <el-button size="small" @click="$router.push('/history')">历史记录</el-button>
@@ -75,10 +78,6 @@ async function onSend() {
   scrollToBottom();
 }
 
-function onSessionSelect(index: string) {
-  chatStore.switchSession(index);
-}
-
 function scrollToBottom() {
   if (messagesRef.value) messagesRef.value.scrollTop = messagesRef.value.scrollHeight;
 }
@@ -90,12 +89,10 @@ function onLogout() {
   router.push('/login');
 }
 
-async function onRenameCurrentSession() {
-  const current = chatStore.sessions.find(s => s.session_id === chatStore.currentSessionId);
-  if (!current) return;
-  const { value } = await ElMessageBox.prompt('请输入新标题', '重命名', { inputValue: current.title, confirmButtonText: '确定', cancelButtonText: '取消' });
+async function onRenameSession(s: { session_id: string; title: string }) {
+  const { value } = await ElMessageBox.prompt('请输入新标题', '重命名', { inputValue: s.title, confirmButtonText: '确定', cancelButtonText: '取消' });
   if (value?.trim()) {
-    await api.put(`/api/chat/sessions/${current.session_id}/title`, { title: value.trim() });
+    await api.put(`/api/chat/sessions/${s.session_id}/title`, { title: value.trim() });
     await chatStore.loadSessions();
   }
 }
@@ -112,7 +109,14 @@ onMounted(async () => {
 .chat-layout { height: 100vh; }
 .sidebar { background: #fff; padding: 12px; border-right: 1px solid #e4e7ed; display: flex; flex-direction: column; }
 .sidebar h3 { margin: 0 0 10px; color: #2c3e50; }
-.nav-btns { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
+.session-list { flex: 1; overflow-y: auto; }
+.session-item { display: flex; align-items: center; padding: 8px 12px; cursor: pointer; border-radius: 4px; margin-bottom: 2px; }
+.session-item:hover { background: #f5f7fa; }
+.session-item.active { background: #ecf5ff; color: #409eff; }
+.session-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.rename-btn { margin-left: 4px; cursor: pointer; font-size: 12px; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; }
+.session-item:hover .rename-btn { opacity: 1; }
+.nav-btns { margin-top: auto; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; }
 .chat-main { display: flex; flex-direction: column; padding: 0; }
 .messages { flex: 1; overflow-y: auto; padding: 16px; }
 .message { margin-bottom: 16px; }
@@ -121,5 +125,4 @@ onMounted(async () => {
 .message .content { margin-top: 4px; padding: 8px 12px; border-radius: 8px; background: #fff; }
 .message.user .content { background: #e8f4fd; }
 .input-area { display: flex; padding: 12px; border-top: 1px solid #e4e7ed; background: #fff; }
-.session-actions { padding: 8px 0; }
 </style>
