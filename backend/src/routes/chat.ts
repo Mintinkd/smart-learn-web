@@ -19,7 +19,13 @@ chatRoutes.post('/ask', async (c) => {
   if (!c.env.ENCRYPTION_KEY) return c.json(error(500, 'ENCRYPTION_KEY 未配置'), 500);
 
   const apiConfigDAO = new APIConfigDAO();
-  const config = await apiConfigDAO.load(c.env.DB, c.env.ENCRYPTION_KEY);
+  let config;
+  try {
+    config = await apiConfigDAO.load(c.env.DB, c.env.ENCRYPTION_KEY);
+  } catch (e) {
+    console.error('load api config error:', e instanceof Error ? e.message : String(e));
+    return c.json(error(500, 'API配置读取失败，请重新保存配置'), 500);
+  }
   if (!config?.api_key_encrypted) return c.json(error(400, 'CHAT_005: 请先配置API密钥'), 400);
 
   const llm = createLLMClient(config.provider, config.api_key_encrypted);
@@ -59,8 +65,10 @@ chatRoutes.post('/ask', async (c) => {
         controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ record_id: crypto.randomUUID() })}\n\n`));
       } catch (e) {
         apiStatus = e instanceof Error && e.message.includes('abort') ? '超时' : '失败';
-        controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: '请求失败，请重试' })}\n\n`));
-        fullAnswer = fullAnswer || `[错误] 请求失败`;
+        const errMsg = e instanceof Error ? e.message : String(e);
+        console.error('LLM stream error:', errMsg);
+        controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ message: `请求失败: ${errMsg}` })}\n\n`));
+        fullAnswer = fullAnswer || `[错误] 请求失败: ${errMsg}`;
       }
       controller.close();
 
@@ -68,7 +76,7 @@ chatRoutes.post('/ask', async (c) => {
       await qaDAO.insert(c.env.DB, {
         record_id: recordId, username: user.username, session_id: body.session_id,
         question: body.question, answer: fullAnswer, created_at: new Date().toISOString(),
-        api_status: apiStatus, api_provider: config.provider as '智谱AI' | '百度UNIT'
+        api_status: apiStatus, api_provider: config.provider
       });
 
       const session = await sessionDAO.findById(c.env.DB, body.session_id);
